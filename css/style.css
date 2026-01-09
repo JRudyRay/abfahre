@@ -1,0 +1,666 @@
+/* ============================================
+   ABFAHRE - Swiss Departure Board
+   Tramli-Style Authentic LED Display
+   ============================================ */
+
+/* CSS Reset */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+/* Fonts - LED Matrix style */
+@import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+:root {
+  /* LED Display Colors - Tramli amber */
+  --led-amber: #d4a012;
+  --led-amber-bright: #e8b520;
+  --led-amber-dim: #9a7510;
+  --led-glow: rgba(212, 160, 18, 0.5);
+  
+  /* Display Background */
+  --display-bg: #0a0a0a;
+  
+  /* Brushed Metal Housing */
+  --metal-light: #e8e8e8;
+  --metal-mid: #c8c8c8;
+  --metal-dark: #a0a0a0;
+  --metal-shadow: #707070;
+  
+  /* UI Colors */
+  --ui-bg: #f5f5f5;
+  --ui-surface: #ffffff;
+  --ui-border: #ddd;
+  --ui-text: #333;
+  --ui-text-dim: #666;
+  --ui-accent: #d4a012;
+  --ui-error: #cc3333;
+
+  /* Departure row spacing (easy tweak) */
+  --gap-line-destination: 20px;
+
+  /* ==============================
+     Layout tuning knobs
+     Change these to dial in widths
+     ============================== */
+  --page-max-width: 650px;
+  --board-max-width: 600px;
+
+  --col-line: 84px;
+  --col-time: 50px;
+  --col-gap: 15px;
+}
+
+html {
+  font-size: 16px;
+}
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  background: linear-gradient(180deg, #e0e0e0 0%, #f0f0f0 100%);
+  color: var(--ui-text);
+  min-height: 100vh;
+  line-height: 1.5;
+}
+
+.container {
+  max-width: var(--page-max-width);
+  margin: 0 auto;
+  padding: 20px 16px;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ============================================
+   HEADER
+   ============================================ */
+header {
+  padding: 16px 0 24px;
+}
+
+.header-inner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+}
+
+.header-text {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.header-text h1 {
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: var(--ui-text);
+  letter-spacing: 4px;
+  margin-bottom: 2px;
+}
+
+.subtitle {
+  color: var(--ui-text-dim);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+}
+
+/* ============================================
+   SBB ANALOG CLOCK (Header)
+   ============================================ */
+.sbb-clock {
+  width: 56px;
+  height: 56px;
+  flex: 0 0 auto;
+}
+
+.sbb-clock-svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.sbb-clock-face {
+  fill: #ffffff;
+  stroke: #cfcfcf;
+  stroke-width: 2;
+}
+
+.sbb-clock-inner {
+  fill: #ffffff;
+  stroke: #e6e6e6;
+  stroke-width: 1;
+}
+
+.sbb-clock-marks rect {
+  fill: #111;
+}
+
+.sbb-hour-mark-strong {
+  fill: #111;
+}
+
+.sbb-minute-ticks {
+  fill: none;
+  stroke: #111;
+  stroke-width: 1.2;
+  /* 60 ticks around the face */
+  stroke-dasharray: 1 3.29;
+  stroke-linecap: butt;
+}
+
+.sbb-hour-hand {
+  stroke: #111;
+  stroke-width: 4.5;
+  stroke-linecap: round;
+}
+
+.sbb-minute-hand {
+  stroke: #111;
+  stroke-width: 3.2;
+  stroke-linecap: round;
+}
+
+.sbb-second-hand {
+  stroke: #d40000;
+  stroke-width: 2.2;
+  stroke-linecap: round;
+}
+
+.sbb-second-disc {
+  fill: #d40000;
+}
+
+.sbb-center {
+  fill: #111;
+}
+
+/* ============================================
+   SEARCH SECTION
+   ============================================ */
+.search-section {
+  position: relative;
+  margin-bottom: 20px;
+}
+
+.search-box {
+  display: flex;
+  gap: 8px;
+}
+
+#station-input {
+  flex: 1;
+  padding: 12px 14px;
+  font-size: 0.95rem;
+  font-family: inherit;
+  background-color: var(--ui-surface);
+  border: 1px solid var(--ui-border);
+  color: var(--ui-text);
+  border-radius: 8px;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+#station-input:focus {
+  outline: none;
+  border-color: var(--ui-accent);
+  box-shadow: 0 0 0 3px rgba(212, 160, 18, 0.2);
+}
+
+#station-input::placeholder {
+  color: var(--ui-text-dim);
+}
+
+.btn {
+  padding: 12px 18px;
+  font-size: 0.9rem;
+  font-family: inherit;
+  font-weight: 600;
+  background: linear-gradient(180deg, #444 0%, #333 100%);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.1s;
+  white-space: nowrap;
+}
+
+.btn:hover {
+  background: linear-gradient(180deg, #555 0%, #444 100%);
+}
+
+.btn:active {
+  transform: scale(0.98);
+}
+
+.btn-icon {
+  padding: 12px 14px;
+  background: linear-gradient(180deg, #444 0%, #333 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-icon svg {
+  width: 18px;
+  height: 18px;
+}
+
+/* Suggestions Dropdown */
+.suggestions {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  background-color: var(--ui-surface);
+  border: 1px solid var(--ui-border);
+  border-radius: 8px;
+  max-height: 240px;
+  overflow-y: auto;
+  z-index: 100;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+}
+
+.suggestion-item {
+  padding: 12px 14px;
+  cursor: pointer;
+  border-bottom: 1px solid var(--ui-border);
+  font-size: 0.9rem;
+  transition: background-color 0.15s;
+}
+
+.suggestion-item:last-child {
+  border-bottom: none;
+}
+
+.suggestion-item:hover {
+  background-color: var(--ui-accent);
+  color: #000;
+}
+
+/* ============================================
+   DEPARTURE BOARD - TRAMLI STYLE
+   ============================================ */
+.board-wrapper {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Brushed Aluminum Housing */
+.display-frame {
+  background: linear-gradient(
+    180deg,
+    var(--metal-light) 0%,
+    var(--metal-mid) 15%,
+    var(--metal-dark) 50%,
+    var(--metal-mid) 85%,
+    var(--metal-light) 100%
+  );
+  border-radius: 16px;
+  padding: 16px 20px;
+  box-shadow: 
+    0 4px 8px rgba(0, 0, 0, 0.2),
+    0 12px 40px rgba(0, 0, 0, 0.25),
+    inset 0 2px 0 rgba(255, 255, 255, 0.6),
+    inset 0 -2px 0 rgba(0, 0, 0, 0.1);
+  position: relative;
+  width: 100%;
+  max-width: var(--board-max-width);
+  margin: 0 auto;
+}
+
+/* Brushed metal texture overlay */
+.display-frame::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: repeating-linear-gradient(
+    90deg,
+    transparent,
+    transparent 1px,
+    rgba(255, 255, 255, 0.03) 1px,
+    rgba(255, 255, 255, 0.03) 2px
+  );
+  border-radius: 16px;
+  pointer-events: none;
+}
+
+/* Beveled Display Recess */
+.display-bezel {
+  background: linear-gradient(
+    135deg,
+    #1a1a1a 0%,
+    #2a2a2a 50%,
+    #0a0a0a 100%
+  );
+  border-radius: 6px;
+  padding: 3px;
+  box-shadow: 
+    inset 0 3px 8px rgba(0, 0, 0, 0.8),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.05);
+}
+
+/* The actual LED display area */
+.display-screen {
+  background-color: var(--display-bg);
+  border-radius: 4px;
+  overflow: hidden;
+  min-height: 180px;
+  position: relative;
+  padding: 12px 0;
+}
+
+/* Station Name Header - Hidden, using simpler layout */
+.station-header {
+  padding: 0 16px 10px;
+  border-bottom: 1px solid rgba(212, 160, 18, 0.15);
+  margin-bottom: 8px;
+}
+
+.station-name {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 0.85rem;
+  color: var(--led-amber-dim);
+  text-shadow: 0 0 6px var(--led-glow);
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+/* Departures List */
+.departures-container {
+  padding: 0;
+}
+
+/* Individual Departure Row - Tramli Style */
+.departure-row {
+  display: grid;
+  grid-template-columns: var(--col-line) minmax(0, 1fr) var(--col-time);
+  column-gap: var(--col-gap);
+  padding: 8px 16px;
+  align-items: center;
+  animation: rowFadeIn 0.3s ease-out;
+}
+
+@keyframes rowFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Line Number - Simple amber text, right aligned */
+.line-number {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 1.3rem;
+  font-weight: 400;
+  color: var(--led-amber);
+  text-shadow: 0 0 8px var(--led-glow);
+  text-align: right;
+  margin-right: var(--gap-line-destination);
+  letter-spacing: 0;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* Destination Text - LED style */
+.destination {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 1.3rem;
+  color: var(--led-amber);
+  text-shadow: 0 0 8px var(--led-glow);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  letter-spacing: 0.5px;
+  min-width: 0;
+}
+
+/* Time/Icon Display - Right side */
+.time-display {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 1.3rem;
+  color: var(--led-amber);
+  text-shadow: 0 0 8px var(--led-glow);
+  text-align: right;
+  letter-spacing: 0;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* Vehicle Icon for imminent arrivals */
+.vehicle-icon {
+  width: 28px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.vehicle-icon svg {
+  width: 100%;
+  height: 100%;
+  fill: var(--led-amber);
+  filter: drop-shadow(0 0 4px var(--led-glow));
+}
+
+/* No departures message */
+.no-departures {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 140px;
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 1rem;
+  color: var(--led-amber-dim);
+  text-shadow: 0 0 6px var(--led-glow);
+}
+
+/* ============================================
+   LOADING STATE
+   ============================================ */
+.loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 140px;
+  gap: 12px;
+}
+
+.loading-dots {
+  display: flex;
+  gap: 8px;
+}
+
+.loading-dots span {
+  width: 8px;
+  height: 8px;
+  background-color: var(--led-amber);
+  border-radius: 50%;
+  animation: loadingDot 1.2s ease-in-out infinite;
+  box-shadow: 0 0 8px var(--led-glow);
+}
+
+.loading-dots span:nth-child(2) { animation-delay: 0.2s; }
+.loading-dots span:nth-child(3) { animation-delay: 0.4s; }
+
+@keyframes loadingDot {
+  0%, 80%, 100% { 
+    transform: scale(1);
+    opacity: 0.5;
+  }
+  40% { 
+    transform: scale(1.3);
+    opacity: 1;
+  }
+}
+
+.loading-text {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 0.85rem;
+  color: var(--led-amber-dim);
+  text-shadow: 0 0 6px var(--led-glow);
+}
+
+/* ============================================
+   ERROR STATE
+   ============================================ */
+.error-state {
+  text-align: center;
+  padding: 20px 16px;
+  background-color: #fff5f5;
+  border: 1px solid var(--ui-error);
+  border-radius: 8px;
+  margin-bottom: 16px;
+}
+
+.error-state p {
+  color: var(--ui-error);
+  margin-bottom: 12px;
+  font-size: 0.9rem;
+}
+
+/* ============================================
+   EMPTY STATE
+   ============================================ */
+.empty-state {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--ui-text-dim);
+}
+
+.empty-state .icon {
+  margin-bottom: 16px;
+  opacity: 0.4;
+}
+
+.empty-state .icon svg {
+  stroke: var(--ui-text-dim);
+}
+
+.empty-state p {
+  font-size: 0.9rem;
+  max-width: 280px;
+  line-height: 1.6;
+}
+
+/* ============================================
+   FOOTER
+   ============================================ */
+footer {
+  margin-top: auto;
+  padding: 20px 0 8px;
+  text-align: center;
+}
+
+.clock {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 1.1rem;
+  color: var(--ui-text);
+  letter-spacing: 2px;
+  margin-bottom: 8px;
+}
+
+.footer-text {
+  font-size: 0.75rem;
+  color: var(--ui-text-dim);
+}
+
+.footer-text a {
+  color: #666;
+  text-decoration: none;
+}
+
+.footer-text a:hover {
+  text-decoration: underline;
+}
+
+/* ============================================
+   UTILITY CLASSES
+   ============================================ */
+.hidden {
+  display: none !important;
+}
+
+/* ============================================
+   RESPONSIVE
+   ============================================ */
+@media (max-width: 400px) {
+  :root {
+    --gap-line-destination: 8px;
+
+    --page-max-width: 100%;
+    --board-max-width: 100%;
+
+    --col-line: 68px;
+    --col-time: 46px;
+    --col-gap: 10px;
+  }
+
+  .container {
+    padding: 12px;
+  }
+  
+  header h1 {
+    font-size: 1.2rem;
+  }
+  
+  .search-box {
+    flex-wrap: wrap;
+  }
+  
+  #station-input {
+    width: 100%;
+  }
+  
+  .btn {
+    flex: 1;
+  }
+  
+  .display-frame {
+    padding: 12px 14px;
+    border-radius: 12px;
+  }
+  
+  .departure-row {
+    grid-template-columns: var(--col-line) minmax(0, 1fr) var(--col-time);
+    column-gap: var(--col-gap);
+    padding: 6px 12px;
+  }
+  
+  .line-number,
+  .destination,
+  .time-display {
+    font-size: 1.1rem;
+  }
+}
+
+/* Large screens */
+@media (min-width: 768px) {
+  .container {
+    padding: 32px 24px;
+  }
+  
+  .display-frame {
+    padding: 20px 28px;
+  }
+}

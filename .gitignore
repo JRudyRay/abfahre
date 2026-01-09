@@ -1,0 +1,35 @@
+# IDE
+.idea/
+.vscode/
+
+# Optional: workspace noise
+*.iml
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Build / cache
+build/
+dist/
+out/
+coverage/
+node_modules/
+
+# Flutter/Dart leftovers (if any)
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.metadata
+.packages
+pubspec.lock
+android/.gradle/
+android/local.properties
+ios/Flutter/ephemeral/
+ios/.symlinks/
+linux/flutter/ephemeral/
+macos/Flutter/ephemeral/
+windows/flutter/ephemeral/
