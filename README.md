@@ -2,7 +2,7 @@
 
 A tiny “Swiss departure board” web app I built for fun.
 
-Type a stop name (or use location), and it shows the next departures in a Tramli-style board. Times update live and the list refreshes regularly.
+Type a stop name (or use location), and it shows the next departures in a typical departure board style. Times update live and the list refreshes regularly.
 
 ## How it works
 
@@ -10,25 +10,6 @@ Type a stop name (or use location), and it shows the next departures in a Tramli
 - Station search: calls `/v1/locations`
 - Departures: calls `/v1/stationboard`
 - Updates: countdown ticks every second, data refreshes periodically
-
-## Run locally
-
-Because the app uses `fetch()`, run it via a local static server (opening `index.html` from `file://` may be blocked by the browser).
-
-```bash
-python -m http.server 8080
-```
-
-Then open `http://localhost:8080`.
-
-## Deploy (GitHub Pages)
-
-This repo includes a GitHub Actions workflow that deploys the static files to GitHub Pages on every push to `main`.
-
-In GitHub:
-
-1. Repo → **Settings** → **Pages**
-2. Under **Build and deployment**, select **GitHub Actions**
 
 ## Data source / attribution
 
