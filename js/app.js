@@ -21,6 +21,16 @@ const sbbMinuteHand = document.getElementById('sbb-minute');
 const sbbSecondHand = document.getElementById('sbb-second');
 const sbbSecondDisc = document.getElementById('sbb-second-disc');
 
+// Config
+const GEOLOCATION_TIMEOUT_MS = 15000;
+const GEOLOCATION_MAX_AGE_MS = 60000;
+
+// In-flight request handling (for smooth UX)
+let suggestionsController = null;
+let suggestionsSeq = 0;
+let departuresController = null;
+let departuresSeq = 0;
+
 // State
 let currentStation = null;
 let currentDepartures = [];
@@ -120,17 +130,27 @@ function startSbbAnalogClock() {
 function handleInputChange(e) {
   const query = e.target.value.trim();
   clearTimeout(searchTimeout);
+
+  // Cancel any in-flight suggestion request so results don't flash.
+  if (suggestionsController) {
+    suggestionsController.abort();
+    suggestionsController = null;
+  }
   
   if (query.length < 2) {
     hideSuggestions();
     return;
   }
 
+  const mySeq = ++suggestionsSeq;
   searchTimeout = setTimeout(async () => {
+    suggestionsController = new AbortController();
     try {
-      const stations = await searchStations(query);
+      const stations = await searchStations(query, { signal: suggestionsController.signal });
+      if (mySeq !== suggestionsSeq) return;
       showSuggestions(stations);
     } catch (err) {
+      if (err && err.message === 'Abgebrochen') return;
       console.error('Search error:', err);
     }
   }, 250);
@@ -213,6 +233,13 @@ async function handleLocationClick() {
     return;
   }
 
+  // Geolocation requires a secure context (HTTPS) in modern browsers.
+  // GitHub Pages is HTTPS, but local file:// previews are not.
+  if (!window.isSecureContext) {
+    showError('Standort nur über HTTPS verfügbar');
+    return;
+  }
+
   showLoading();
   hideError();
   hideEmptyState();
@@ -222,8 +249,8 @@ async function handleLocationClick() {
     const position = await new Promise((resolve, reject) => {
       navigator.geolocation.getCurrentPosition(resolve, reject, {
         enableHighAccuracy: true,
-        timeout: 10000,
-        maximumAge: 60000
+        timeout: GEOLOCATION_TIMEOUT_MS,
+        maximumAge: GEOLOCATION_MAX_AGE_MS
       });
     });
 
@@ -246,12 +273,25 @@ async function handleLocationClick() {
 async function loadDepartures() {
   if (!currentStation) return;
 
+  // Cancel any in-flight departures request so station changes feel instant.
+  if (departuresController) {
+    departuresController.abort();
+    departuresController = null;
+  }
+  const mySeq = ++departuresSeq;
+  departuresController = new AbortController();
+
   showLoading();
   hideError();
   showBoard();
 
   try {
-    const departures = await fetchDepartures(currentStation.id || currentStation.name);
+    const departures = await fetchDepartures(
+      currentStation.id || currentStation.name,
+      8,
+      { signal: departuresController.signal }
+    );
+    if (mySeq !== departuresSeq) return;
     // Filter out past departures
     const now = new Date();
     currentDepartures = departures.filter(dep => dep.departureTime >= now);
@@ -267,6 +307,7 @@ async function loadDepartures() {
     clearInterval(countdownInterval);
     countdownInterval = setInterval(updateCountdowns, 1000);
   } catch (err) {
+    if (err && err.message === 'Abgebrochen') return;
     hideLoading();
     showError(err.message);
   }
@@ -355,11 +396,12 @@ function updateCountdowns() {
 // ============================================
 function showLoading() {
   loading.classList.remove('hidden');
-  departuresContainer.innerHTML = '';
+  setBusy(true);
 }
 
 function hideLoading() {
   loading.classList.add('hidden');
+  setBusy(false);
 }
 
 function showError(message) {
@@ -368,10 +410,18 @@ function showError(message) {
   showEmptyState();
   errorMessage.textContent = message;
   error.classList.remove('hidden');
+  setBusy(false);
 }
 
 function hideError() {
   error.classList.add('hidden');
+}
+
+function setBusy(isBusy) {
+  stationInput.disabled = !!isBusy;
+  searchBtn.disabled = !!isBusy;
+  locationBtn.disabled = !!isBusy;
+  retryBtn.disabled = !!isBusy;
 }
 
 function showBoard() {
