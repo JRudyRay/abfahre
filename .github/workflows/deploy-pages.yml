@@ -30,6 +30,7 @@ jobs:
         run: |
           mkdir -p public
           cp index.html public/
+          cp favicon.svg public/
           cp -R css public/css
           cp -R js public/js
           touch public/.nojekyll
